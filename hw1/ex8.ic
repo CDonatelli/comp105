@@ -1,0 +1,15 @@
+; This solution builds the decimal number from least significan bit to most significant,
+; dividing by 2 each step, until nothing is left.
+
+(define binary (m)
+  (if (< m 0) 		;if the number is negative, flip the sign to the argument and flip the sign of the result
+    (* -1 (binary (* -1 m)))
+    (if (< m 2)		;base case - if we're left with 0 or 1, just return 
+      m
+      (if (mod m 2)
+        (+ 1 (* 10 (binary (/ m 2))))
+        (+ 0 (* 10 (binary (/ m 2))))
+      )
+    )
+  )
+)

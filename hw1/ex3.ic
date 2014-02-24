@@ -1,0 +1,9 @@
+;This is a more direct approach, but since we're supposed to use recursion...
+;(define sigma (m n) (/ (*(+ n m)(+ (- n m) 1)) 2))
+
+(define sigma (m n)
+  (if (> m n)  ; base case
+    0
+    (+ m (sigma (+ m 1) n))
+  )
+)

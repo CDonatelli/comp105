@@ -1,0 +1,8 @@
+
+(define testsigma1 () (if (= (sigma 2 10) 54) 1 0))
+(define testsigma2 () (if (= (sigma -10 -2) -54) 1 0))
+(define testsigma3 () (if (= (sigma -100 99) -100) 1 0))
+
+(testsigma1)
+(testsigma2)
+(testsigma3)

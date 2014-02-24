@@ -1,0 +1,25 @@
+(define exp (m n) 
+  (if (= n 0)
+     1  			;base case
+     (* m (exp m (- n 1)))  	;recursive step:  m^n=m*m^(n-1)
+  )
+)
+ 
+
+; defined only for m > 1, n >0
+(define log (m n)
+  (if (< m 2)  		; undefined
+     -99999
+     (if (< n 1)	; undefined
+       -99999	
+       (if (< n m)
+         0
+         (+ 1 (log m (/ n m)))
+                                ;  => log_m(n) = log_m(m*n/m)
+                                ;  => log_m(n) = log_m(m) + log_m(n/m)  - rules of logarithms
+                                ;  => log_m(n) = 1 + log_m(n/m)
+      )
+    )
+  )
+) 
+

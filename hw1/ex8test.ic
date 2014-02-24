@@ -1,0 +1,13 @@
+
+(define bintest1 ()
+	(if (= (binary 137) 10001001) 1 0))
+
+(define bintest2 ()
+	(if (= (binary 0) 0) 1 0))
+
+(define bintest3 ()
+	(if (= (binary 1) 1) 1 0))
+
+(bintest1)
+(bintest2)
+(bintest3) 

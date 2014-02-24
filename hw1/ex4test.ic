@@ -1,0 +1,15 @@
+
+(define testexp1 () (if (= (exp 3 0) 1) 1 0))
+(define testexp2 () (if (= (exp 3 3) 27) 1 0))
+(define testexp3 () (if (= (exp -3 3) -27) 1 0))
+(define testlog1 () (if (= (log 2 15) 3) 1 0))
+(define testlog2 () (if (= (log 2 16) 4) 1 0))
+(define testlog3 () (if (= (log 2 17) 4) 1 0))
+
+(testexp1)
+(testexp2)
+(testexp3)
+(testlog1)
+(testlog2)
+(testlog3)
+

@@ -1,0 +1,14 @@
+; pretty much copied directly from the problem statement...
+(define fib (m)
+  (if (< m 0) -99999
+    (if (= m 0) 0
+      (if (= m 1) 1
+        (+
+          (fib (- m 1))
+          (fib (- m 2))
+        )
+      )
+    )
+  )
+)
+

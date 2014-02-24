@@ -1,0 +1,11 @@
+
+(define choosetest1 () (if (= (choose 5 3) 10) 1 0))
+(define choosetest2 () (if (= (choose 3 5) 0) 1 0))
+(define choosetest3 () (if (= (choose 11 3) 165) 1 0))
+(define choosetest4 () (if (= (choose -11 3) -99999) 1 0))
+(define choosetest5 () (if (= (choose 11 -3) -99999) 1 0))
+
+(choosetest1)
+(choosetest2)
+(choosetest3)
+(choosetest4)

@@ -1,0 +1,70 @@
+
+; helper function mod - copied from text book
+(define mod (m n) (- m (* n (/ m n))))
+
+
+; helper function isprime? - checks to see if y is prime, assuming that all numbers less than x are excluded as factors
+(define isprime? (x y)
+  (if (< x y)   		; there is room for efficiency here, since we know that a number can't have a factor bigger than y/2
+    (if (mod y x)   		; if x doesn't divide evenly, then we know it's not a factor
+	(isprime? (+ x 1) y)  	; if x is not a factor, check x+1
+	  0			; if x is a factor, then prime test fails
+    )
+    1				; if we got to here, then we found no factors, so we have a prime number
+  )
+)
+
+
+(define prime? (n)
+  (if (< n 2) 0 		; by definition of primes
+    (isprime? 2 n)   		; call helper 
+  )
+)
+
+
+
+; takes two arguments - first one is a number to start the search for the next prime
+; the second is the number of prime numbers to return
+(define nthprime_helper (x y)
+  (if (prime? x)
+    (if	(= y 0)					; if we found a prime and there are no more to find
+      x 
+      (nthprime_helper (+ x 1) (- y 1)))	; if we found a prime, but it's not the nth
+    (nthprime_helper (+ x 1) y)			; if we found a non-prime
+  )
+)
+
+; finds the nth prime number, where n>=1.  Uses helper function that bascially finds the next prime, given a starting point
+; and continues until it has found n primes;
+(define nthprime (n)
+  (if (< n 1) -99999
+    (if (= n 1)
+      2
+      (nthprime_helper 2 (- n 1))
+    )
+  )
+)
+
+; adds the nth prime to a number s.   
+(define sumprimes_helper (s n)
+	(if (= n 0) 
+	  0
+	  (+ 
+		(nthprime n)			; add nth prime to:
+		(sumprimes_helper s (- n 1))))	; the sum of primes 1..(n-1)
+
+)
+
+; Calculates sum of first n primes, using recursive helper.  
+(define sumprimes (n)
+	(sumprimes_helper 0 n)
+)
+
+; helper function gcd - copied from text book
+(define gcd (m n)
+   (if (= n 0) m (gcd n (mod m n)))
+)
+; Uses gcd function from book..  two numbers are relative primes iff they have a gcd=1.  gcd function is recursive;
+(define relprime? (m n)
+ (if (= 1 (gcd m n)) 1 0)
+)

@@ -1,0 +1,10 @@
+
+(define fibtest1 () (if (= (fib 0) 0) 1 0))
+(define fibtest2 () (if (= (fib 1) 1) 1 0))
+(define fibtest3 () (if (= (fib 6) 8) 1 0))
+(define fibtest4 () (if (= (fib 20) 6765) 1 0))
+
+(fibtest1)
+(fibtest2)
+(fibtest3)
+(fibtest4)

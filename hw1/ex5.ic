@@ -1,0 +1,14 @@
+; pretty much copied directly from the problem statement...
+(define choose (n k)
+  (if (< k 0) -99999 
+    (if (< n 0) -99999
+      (if (> k n) 0
+        (if (= k 0) 1     ; at this point we have meaningful values and can proceed
+          (if (= n k) 1
+            (+ (choose (- n 1) k) (choose (- n 1)(- k 1)))
+          )
+        )
+      )
+    )
+  )
+)
