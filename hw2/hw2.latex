@@ -1,0 +1,346 @@
+\documentclass[11pt]{article}
+
+\usepackage{mathpartir}
+\usepackage{fancyhdr}
+% -- Semantics stuff
+%     I defined a couple of special commands (see examples in the text below) to make
+%     writing inference rules and judgements easier.
+\newcommand{\br}[1]{\langle #1 \rangle}
+\def\Yields{\Downarrow}
+
+% -- Page size
+\textheight     9.0truein
+\textwidth      6.5truein
+\topmargin     -0.5truein
+\oddsidemargin  +0.0truein
+\evensidemargin +0.0truein
+
+% -- Document title (appears at top)
+\title{COMP 105 Homework}
+\author{Ian Altgilbers}
+\begin{document}
+\lhead{Ian Altgiasdfasdfasdfasdfasdfasdfasfasdfasfasdfasfasfasdfasdflbers}
+
+\maketitle
+% -- Example of a "heading": a bold title, not indented
+%     Any text inside the \textbf{} markup is rendered in bold
+\noindent
+\textbf{1. Derivation}
+
+% -- Regular paragraph
+
+Use the operational semantics of ImpCore to prove that if you evaluate \texttt{(begin (set x (+ x 1)) x)} in an environment where $\rho(x) = 99$, then result of the evaluation is 100. Use a formal derivation tree like the example on page 50 in the book. (Feel free to use the more condensed form in order to save space)
+
+\vspace{10mm}
+\hrule
+\vspace{10mm}
+
+
+I only modified environment variables when they actually changed, since this is a derivation of a particular case, and not general operational semantics for BEGIN, VAR, etc.
+
+\begin{mathpar}
+\\\\
+
+
+\inferrule*[Left=\textsc{Begin}]{
+  \inferrule*[Left=\textsc{FormalAssign}]{
+    \inferrule*[Left=\textsc{ApplyAdd}]{
+      \inferrule*[Left=\textsc{FormalVar}]{
+        x\in dom~\rho_0 \hspace{1 pc} \rho_0(x)=99
+      }
+      {
+        \br{VAR(x),\xi_0,\phi,\rho_0} \Yields \br{99,\xi_0, \phi, \rho_0}
+      }
+    }
+    {
+      \br{(+~x~1),\xi_0,\phi,\rho_)} \Yields \br{100,\xi_0, \phi, \rho_0}~~~~
+      \rho_1=\rho_0\{x\mapsto 100\}
+    }
+  }
+  {
+    \br{SET(x,+(x~1),\xi_0,\phi,\rho_0}\Yields\br{v,\xi_0,\phi,\rho_1}
+  }
+~~~
+\inferrule*[Right=\textsc{FormalVar}]{x\in dom~\rho_1~~~~\rho_1(x)=100}{\br{VAR(x),\xi_0,\phi,\rho_1} \Yields \br{100,\xi_0, \phi, \rho_1}}
+}
+{
+\br{BEGIN(SET(x,+(x~1), x), \xi_0, \phi,\rho_0} \Yields \br{100, \xi_0, \phi, \rho_1}
+}
+\\\\
+\end{mathpar}
+
+
+\newpage
+\noindent\textbf{2. Proof of Equivalence}
+
+Use the operational semantics to show that if there exist environments $\xi$, $\phi$, and $\rho$ such that
+\begin{mathpar}
+\br{IF(VAR(X), VAR(X),LITERAL(0)),\xi,\phi,\rho}\Yields\br{v_1,\xi',\phi,\rho'}
+\end{mathpar}
+and
+\begin{mathpar}
+\br{VAR(X),\xi,\phi,\rho}\Yields\br{v_2,\xi'',\phi,\rho''}
+\end{mathpar}
+then $v_1=v_2$.
+
+\vspace{10mm}
+\hrule
+\vspace{10mm}
+
+\noindent
+First, $x$ must be in either $\xi$, $\rho$, or both, otherwise $VAR(X)$ will not be able to be evaluated.  Also important is the fact that the operational semantics for \textsc{FormalVar} and \textsc{GlobalVar} do \textbf{not} modify any environtments:
+\begin{mathpar}
+\inferrule*[Left=\textsc{FormalVar}]{
+x\in dom~\rho
+}
+{
+\br{VAR(x), \xi, \phi, \rho} \Yields \br{\rho(x), \xi, \phi, \rho}
+}
+\\\\
+\inferrule*[Left=\textsc{GlobalVar}]{
+x\notin dom~\rho~~~~x\in dom~\xi
+}
+{
+\br{VAR(x), \xi, \phi, \rho} \Yields \br{\xi(x), \xi, \phi, \rho}
+}
+
+\end{mathpar}
+
+\noindent
+No matter which portion of the environment ($\xi$ or $\rho$) contains $x$, $VAR(x)$ will always evaluate to the same value $x$.  Next, the IF statement has two rules for its possible outcomes with $e_1$ being zero or non-zero. So we have 4 possible cases:
+
+\indent
+1. $\rho(x)=0$, where $v_2=0$, and $v_1=0$
+
+2. $\rho(x)\not=0$, where $v_2=x$, and $v_1=x$
+
+3. $\xi(x)=0,x\notin dom~\rho$, where $v_2=0$, and $v_1=0$
+
+4. $\xi(x)\not=0,x\notin dom~\rho$, where $v_2=x$, and $v_1=x$
+\\\\
+\noindent
+In all of these cases, which cover all possible relevant environments, the condition $v_1=v_2$ holds true.
+
+
+
+\newpage
+\textbf{3. OpSem for exitwhen loop}
+
+Consider a new kind of loop for ImpCore called "exit when", which is a variation on the while loop that provides a single point of exit in the middle (like a very limited form of "break"). The syntax is (exitwhen e1 cond e2), where e1, cond, and e2 can be any expression. It works as follows: each time through the loop, e1 is evaluated first, followed by the condition expression cond. If the condition is true then the loop stops. Otherwise, it evaluates e2 and then repeats. Give the operational semantics for exitwhen.
+
+Like the while loop the value it produces at the end is unimportant -- it is evaluated only for its side-effects.
+\vspace{10mm}
+\hrule
+\vspace{10mm}
+
+This is borrowing pretty heavily from the strategy for handling the while...  Here, there are again two cases: when the condition is true and when the condition is false.  For both cases, we will always evaluate $e_1$ and $e_2$.  If the condition is true ($v_2\not=0$), \textsc{CondTrue} applies, otherwise \textsc{CondFalse} applies.  For \textsc{CondTrue} we evaluate $e_1$, $e_2$, and $e_3$ in order, then recursively apply \textsc{EXITWHEN} with the resulting environment.  For \textsc{CondFalse} we evaluate $e_1$ and $e_2$ and then return 0, with the resulting environment.
+
+\begin{mathpar}
+\inferrule*[Left=\textsc{CondTrue}]{
+\br{e_1, \xi, \phi, \rho} \Yields \br{v_1, \xi', \phi, \rho'}~~~~
+\br{e_2, \xi', \phi, \rho'} \Yields \br{v_2, \xi'', \phi, \rho''}~~~~
+v_2\not=0\\\\
+\br{e_3, \xi'', \phi, \rho''} \Yields \br{v_3, \xi''', \phi, \rho'''}~~~~
+\br{EXITWHEN(e_1,e_2,e_3), \xi''', \phi, \rho'''} \Yields \br{v_4, \xi'''', \phi, \rho''''}}
+{
+\br{EXITWHEN(e_1,e_2,e_3), \xi, \phi, \rho} \Yields \br{v_4, \xi'''', \phi, \rho''''}
+}
+
+
+\inferrule*[Left=\textsc{CondFalse}]{
+\br{e_1, \xi, \phi, \rho} \Yields \br{v_1, \xi', \phi, \rho'}~~~~
+\br{e_2, \xi', \phi, \rho'} \Yields \br{v_2, \xi'', \phi, \rho''}~~~~
+v_2=0
+}
+{
+\br{EXITWHEN(e_1,e_2,e_3), \xi, \phi, \rho} \Yields \br{0, \xi'', \phi, \rho''}
+}
+
+
+
+\end{mathpar}
+
+\newpage
+\textbf{4. OpSem for loops with a true break statement.}
+
+Languages like C and Java provide a \textbf{break} statement, which can be used to exit a loop from anywhere inside the body. When the \textbf{break} statement is executed control jumps immediately to the code following the loop. This capability is somewhat tricky to represent in structural operational semantics because we only look at a single AST node at a time.
+
+For this problem imagine that we add a very simple, but powerful kind of loop called "repeat", with the syntax \texttt{(repeat e)}. Unlike \textbf{while} and \textbf{exitwhen} it does not have a loop condition at all. Instead, it evaluates the body repeatedly until it encounters a \textbf{(break)} expression, which causes it to exit the loop.
+
+Programmers can put any number of \textbf{(break)} expressions anywhere inside the loop body. When a \textbf{(break)} is encountered, the loop terminates immediately and no other expressions in the body are evaluated. Here is a small example that increments ’x’ until it reaches 10:
+\begin{verbatim}(repeat (set x (+ 1 (if (= x 10) (break) x))))\end{verbatim}
+
+\textbf{Part (a)}: Show that any while loop of the form \textbf{(while c e)} can be written using \textbf{repeat} and \textbf{break}. (For this problem, do not write semantics -- just show the code).
+
+\textbf{Part (b)}: Modify ImpCore semantics to accommodate this new kind of loop. Here is the key idea: we add a special flag to each judgement that indicates whether or not a break was encountered during evaluation. The flag can take on one of two values, ok or br, which you can check for and assign just like the result value v. Here is the general form of the new judgements (every judgement must now have this form):
+
+\[\br{e,\xi,\phi,\rho}\Yields\br{v,\xi',\phi,\rho',flag}\]
+
+You do not need to rewrite all the ImpCore inference rules. Just write inference rules for \textbf{(repeat)}, \textbf{(break)}, and one or two other non-looping constructs, such as \textbf{(if)} or one of the arithmetic expressions. Think carefully about cases where, for example, \texttt{(+ e1 e2)} is being evaluated, and the evaluation of e1 hits a \textbf{(break)} and yields a flag with the value \textbf{br}.
+
+
+
+\vspace{10mm}
+\hrule
+\vspace{10mm}
+\noindent
+\textbf{Part a.}
+
+These two expressions will yield the same result, given the rule above:
+\begin{verbatim}(while c e)
+\end{verbatim}
+\begin{verbatim}(repeat (if c e break))
+\end{verbatim}
+
+\noindent
+\textbf{Part b.}
+
+All judgements must now include the break flag, so the operational semantics for all existing Impcore expression must be rewritten, in addition to rules for newcomers \textbf{repeat} and \textbf{break}.  Since we may come across a break at any point in any sub-expression, we need to handle each case separately.
+\begin{mathpar}
+\inferrule*[Left=\textsc{Break}]{
+-
+}
+{
+\br{BREAK(), \xi, \phi, \rho} \Yields \br{0, \xi, \phi, \rho,br}
+}
+\end{mathpar}
+
+\begin{mathpar}
+
+\inferrule*[Left=\textsc{RepeatContinue}]{
+\br{e_1, \xi, \phi, \rho} \Yields \br{v_1, \xi', \phi, \rho',ok}
+~~~
+\br{REPEAT(e_1), \xi', \phi, \rho'} \Yields \br{v_3, \xi'', \phi, \rho'',ok}}
+{
+\br{REPEAT(e_1), \xi, \phi, \rho} \Yields \br{v_3, \xi'', \phi, \rho'',ok}
+}
+\end{mathpar}
+\begin{mathpar}
+\inferrule*[Left=\textsc{RepeatStop}]{
+\br{e_1, \xi, \phi, \rho} \Yields \br{v_1, \xi', \phi, \rho',br}
+}
+{
+\br{REPEAT(e_1), \xi, \phi, \rho} \Yields \br{0, \xi', \phi, \rho',br}
+}
+\end{mathpar}
+Accomodating existing rules gets ugly... For generic operators, it seems that we need to define rules for each slot where an argument could contain a break...  So we'll need a far more complicated set of rules.  First for IF:
+
+\begin{mathpar}
+\inferrule*[Left=\textsc{IfBreakE1}]{
+\br{e_1, \xi, \phi, \rho} \Yields \br{0, \xi', \phi, \rho',br}
+}
+{
+\br{IF(e_1,e_2,e_3), \xi, \phi, \rho} \Yields \br{0, \xi', \phi, \rho',br}
+}
+
+\inferrule*[Left=\textsc{IfTrueBreak}]{
+\br{e_1, \xi, \phi, \rho} \Yields \br{v_1, \xi', \phi, \rho',ok}~~~
+v_1\not=0~~~\br{e_2, \xi', \phi, \rho'} \Yields \br{0, \xi'', \phi, \rho'',br}
+}
+{
+\br{IF(e_1,e_2,e_3), \xi, \phi, \rho} \Yields \br{0, \xi'', \phi, \rho'',br}
+}
+
+\inferrule*[Left=\textsc{IfTrueNoBreak}]{
+\br{e_1, \xi, \phi, \rho} \Yields \br{v_1, \xi', \phi, \rho',ok}~~~
+v_1\not=0~~~\br{e_2, \xi', \phi, \rho'} \Yields \br{v_2, \xi'', \phi, \rho'',ok}
+}
+{
+\br{IF(e_1,e_2,e_3), \xi, \phi, \rho} \Yields \br{v_2, \xi'', \phi, \rho'',ok}
+}
+
+\inferrule*[Left=\textsc{IfFalseBreak}]{
+\br{e_1, \xi, \phi, \rho} \Yields \br{v_1, \xi', \phi, \rho',ok}~~~
+v_1=0~~~\br{e_3, \xi', \phi, \rho'} \Yields \br{0, \xi'', \phi, \rho'',br}
+}
+{
+\br{IF(e_1,e_2,e_3), \xi, \phi, \rho} \Yields \br{0, \xi'', \phi, \rho'',br}
+}
+
+\inferrule*[Left=\textsc{IfFalseNoBreak}]{
+\br{e_1, \xi, \phi, \rho} \Yields \br{v_1, \xi', \phi, \rho',ok}~~~
+v_1=0~~~\br{e_3, \xi', \phi, \rho'} \Yields \br{v_2, \xi'', \phi, \rho'',ok}
+}
+{
+\br{IF(e_1,e_2,e_3), \xi, \phi, \rho} \Yields \br{v_3, \xi'', \phi, \rho'',ok}
+}
+\end{mathpar}
+
+Then for a generic ApplyAdd:
+
+\begin{mathpar}
+\inferrule*[Left=\textsc{ApplyAddNoBreak}]{
+\phi(f)=\textsc{Primitive(+)}~~~~v_3=v_1+v_2\\\\
+\br{e_1, \xi, \phi, \rho} \Yields \br{v_1, \xi', \phi, \rho',ok}~~~
+\br{e_2, \xi', \phi, \rho'} \Yields \br{v_2, \xi'', \phi, \rho'',ok}
+}
+{
+\br{APPLY(f,e_1,e_2), \xi, \phi, \rho} \Yields \br{v_3, \xi'', \phi, \rho'',ok}
+}
+
+\inferrule*[Left=\textsc{ApplyAddBreakE1}]{
+\phi(f)=\textsc{Primitive(+)}~~~~
+\br{e_1, \xi, \phi, \rho} \Yields \br{0, \xi', \phi, \rho',br}~~~
+}
+{
+\br{APPLY(f,e_1,e_2), \xi, \phi, \rho} \Yields \br{0, \xi', \phi, \rho',br}
+}
+
+
+\inferrule*[Left=\textsc{ApplyAddBreakE2}]{
+\phi(f)=\textsc{Primitive(+)}~~~~
+\br{e_1, \xi, \phi, \rho} \Yields \br{v_1, \xi', \phi, \rho',ok}~~~
+\br{e_2, \xi', \phi, \rho'} \Yields \br{0, \xi'', \phi, \rho'',br}
+}
+{
+\br{APPLY(f,e_1,e_2), \xi, \phi, \rho} \Yields \br{0, \xi'', \phi, \rho'',br}
+}
+
+\end{mathpar}
+
+The general case would be, a copy of the existing rule for when no break is encountered, then a copy of the rule for each argument.  The return value would always be 0 if a break is encountered, but the environment will be different depending on where in the sub expression the break was encountered.  I'm not quite sure how to handle BEGIN with an arbitrary number of arguments concisely...
+
+\newpage
+\textbf{5. Metatheoretic proof}
+Prove that ImpCore is deterministic. That is, for any expression e and any set of environments, there is at most one value v such that
+\[\br{e, \xi, \phi, \rho} \Yields \br{v, \xi', \phi, \rho'}\]
+
+This kind of proof is called metatheoretic because we are attempting to prove something about all possible programs. To do that, we need to show that the property holds for every construct. The best strategy is to construct a proof by induction on the structure of the AST: for each AST construct, show that if the evaluation of its subexpressions is deterministic, then its own result will be deterministic. Hint: think about which AST nodes could produce multiple values, but don't.
+
+\vspace{6mm}
+\hrule
+\vspace{6mm}
+
+An Impcore program can be expressed as an Abstract Syntax tree, composed of the following expressions:
+\begin{verbatim}
+Exp = LITERAL  (Value)
+    | VAR      (Name)
+    | SET      (Name, Exp) 
+    | IF       (Exp, Exp, Exp) 
+    | WHILE    (Exp, Exp) 
+    | BEGIN    (Explist) 
+    | APPLY    (Name, Explist) 
+\end{verbatim}
+\noindent
+Any AST will be deterministic if its root node is deterministic, and all child subtrees are deterministic.  This applies inductively/recursively to the children until we get to the leaves of the tree.  The base case for the induction/recursion as at leaves of the AST (LITERAL and VAR)\\\\
+
+\textbf{LITERAL} - Nodes of type LITERAL are leaf nodes and have a deterministic value by definition.
+
+\textbf{VAR} - Also leaf nodes.  For any given environment VAR(X) is deterministic... It can evaluate evaluate differently, depending on if the variable name X is defined in $\rho$ or $\xi$ or both, but for a given environment it has to be defined in one or both.  If $x\notin dom~\rho$ and $x\notin dom~\xi$, then the program gets stuck, otherwise this evaluates to the value stored in the most "local" $x$
+
+\textbf{SET} - SET evaluates to whatever it's argument evaluates to... If that expression is deterministic, SET is also.  This is subject to the same constraint as with VAR...  If $x\notin dom~\rho$ and $x\notin dom~\xi$, then the program gets stuck.
+
+\textbf{IF} - Since the two branches of IF are conditioned on a pair mutually exclusive conditions ($v_1=0$, $v_1\not=0$), the branch of the if that is followed is deterministic, assuming $e_1$, $e_2$, and $e_3$ are all deterministic.  
+
+\textbf{WHILE} - Similar to IF, WHILE has two branches that are followed based on two mutually exclusive conditions ($v_1=0$, $v_1\not=0$).  If $e_1$, $e_2$ are deterministic, $WHILE(e_1,e_2)$ must also be.
+
+\textbf{BEGIN} - This nonconditional construct just evaluates $e_1,e_2,\cdots e_n$ sequentially.  If $e_1,e_2,\cdots e_n$ are all individually deterministic, then $BEGIN(e_1,e_2,\cdots e_n)$ must also be.
+
+\textbf{APPLY} - Apply is more or less an alias to another expression that also has a list of expressions to evaluate before evaluating the "named" expression.  Since there is no condition here, if all "argument" expressions are deterministic and the "function" expresion is deterministic, then APPLY is deterministic.
+
+
+So, putting it all together..  Since all expression types are shown to be deterministic, and the evaluation of any such tree must be deterministic.
+
+
+
+\end{document}
