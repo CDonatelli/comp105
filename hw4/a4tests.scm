@@ -62,10 +62,12 @@
 ;; 9.g
 (define APPEND-TEST () 0)
 (equal? (append-hof '(1) '(2 3)) '(1 2 3))
-
+(equal? (append-hof '(1 (2 3)) '(4 5)) '(1 (2 3) 4 5))
+(equal? (append-hof '(1 (2 3)) '(4 5)) (append '(1 (2 3)) '(4 5)))
 ;; 9.i
 (define REVERSE-TEST () 0)
 (equal? (reverse-hof '(1 2 3 4 5)) '(5 4 3 2 1))
+(equal? (reverse-hof '((1 (2 3))(4 (5 (6 7)))(8 (9 (10 () 11 12 13))))) (reverse '((1 (2 3))(4 (5 (6 7)))(8 (9 (10 () 11 12 13))))))
 
 ;; take
 (define TAKE-TEST () 0)
@@ -93,19 +95,29 @@
 ;; arg-max
 (define ARG-MAX-TEST () 0)
 (define square (a) (* a a))
+(define negate(a) (* -1 a))
 (equal? 5 (arg-max square '(5 4 3 2 1)))
+(equal? -3 (arg-max negate '(2 1 0 -1 -2 -3)))
 
 ;; merge
 (define MERGE-TEST () 0)
 (equal? (merge '(1 3 5) '(2 4 6)) '(1 2 3 4 5 6))
+(equal? (merge '(1 3 5) '(2 4 6 7 9)) '(1 2 3 4 5 6 7 9))
+(equal? (merge '(1 3 5 7 9) '(2 4 6)) '(1 2 3 4 5 6 7 9))
 
 ;; interleave
 (define INTERLEAVE-TEST ()  0)
 (equal? (interleave '(1 2 3) '(a b c)) '(1 a 2 b 3 c))
+(equal? (interleave '(1 2 3 4 5) '(a b c)) '(1 a 2 b 3 c 4 5))
+(equal? (interleave '(1 (x y z) 3) '(a b c)) '(1 a (x y z) b 3 c))
 
 ;; Tree test
 (define EVAL-TEST () 0)
 (equal? (evalexp '((2 * 5) + 10)) 20)
+(equal? (evalexp '((2 - 5) * 10)) -30)
+(equal? (evalexp '((8 / 2) / 2)) 2)
 
 (define TO-PREFIX-TEST() 0)
 (equal? (to-prefix '((2 * 5) + 10)) '(+ (* 2 5) 10))
+(equal? (to-prefix '(((2 - 1) * 5) + 10)) '(+ (* (- 2 1) 5) 10))
+(equal? (to-prefix '(1 + (2 + 3))) '(+ 1 (+ 2 3)))

@@ -1,16 +1,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; 1a
+; 1a  -  there are a bunch of ways to do this one...
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define count (x xs)
-	(if (null? xs)
-		0
-		(if (equal? x (car xs))
-			(+ 1 (count x (cdr xs)))
-			(count x (cdr xs)))))
+;(define count (x xs)
+;	(if (null? xs)
+;		0
+;		(if (equal? x (car xs))
+;			(+ 1 (count x (cdr xs)))
+;			(count x (cdr xs)))))
 
-;(count 'a '(a b a c (c a) a d))
-;(count '() '(a  () b a c (c () a) a d))
+;;; curry "=" with x, filter the list with the resulting predicate, then count remaining elements
+(define count (x xs)
+	(length (filter ((curry =) x) xs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; 1b
@@ -25,24 +26,17 @@
 				(+ 1 (countall x (cdr xs)))
 				(countall x (cdr xs))))))
 			
-;(countall 'a '(a b a c (c a) a d))
-;(countall 'c '(a b (a c) (c a (a c ((a c)(a)))) a d))
-;(countall '() '(a  () b a c (c () a) a d))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;1c
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define mirror (xs)
 	(if (null? xs)
 		xs
 		(if (pair? xs)
 			(append (mirror (cdr xs)) (list1 (mirror (car xs))))
 			xs)))
-
-;(mirror '(1 2 3))
-;(mirror '((a (b 5)) (c d) e))
-;(mirror '((1 (2 3))(4 (5 (6 7)))(8 (9 (10 11 12 13)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -56,18 +50,17 @@
 			(list1 xs)
 			(append (flatten (car xs)) (flatten (cdr xs))))))
 
-;(flatten '((a (b 5)) (c d) e))
-;(flatten '((1 (2 3))(4 (5 (6 7)))(8 (9 (10 () 11 12 13)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;1e
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;; helper function to let me keep a handle on the original list
 (define contig-sublist-helper (orig xs ys)
-	(if (null? xs)									;if xs is null, we match
+	(if (null? xs)						;if xs is null, we match
 		#t
-		(if (null? ys)								;if ys is null, no match
+		(if (null? ys)					;if ys is null, no match
 			#f
 			(if (equal? (car xs) (car ys))
 				(contig-sublist-helper orig (cdr xs) (cdr ys))
@@ -75,10 +68,6 @@
 
 (define contig-sublist? (xs ys)
 	(contig-sublist-helper xs xs ys))
-
-
-;(contig-sublist? '(a y b) '(x a y b z c))
-;(contig-sublist? '(a b c) '(x a y b z c))
 
 
 
@@ -95,19 +84,6 @@
 				(sublist? (cdr xs) (cdr ys))
 				(sublist? xs (cdr ys))))))
 
-;(sublist? '(a b) '(a b c))
-;(sublist? '(a b) '(b b b c))
-;(sublist? '(a y b) '(x a y b z c))
-;(sublist? '(a b c) '(x a y b z c))
-;(sublist? '(c b a) '(x a y b z c))
-
-
-
-
-
-
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;9a
@@ -117,9 +93,6 @@
 	(map cdr lists))
 
 
-;(cdr* '((a b c) (d e) (f)))
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;9b
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -127,7 +100,6 @@
 (define max* (xs)
 	(foldr (lambda (x y) (if (> x y) x y)) (car xs) xs))	
 
-;(max '(1 2 3 4 5 2 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;9g
@@ -136,8 +108,6 @@
 (define append-hof (xs ys)
 	(foldr cons ys xs))
 
-;(append-hof '(1 2 3) '(4 5 6))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;9i
@@ -145,11 +115,6 @@
 
 (define reverse-hof (xs)
 	(foldl cons '() xs))
-
-;(reverse-hof '(6 5 4 3 2 1))
-
-
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -162,8 +127,6 @@
 		(if (equal? n 0)
 			'()
 			(cons (car xs)(take (- n 1) (cdr xs))))))
-;(take 4 '(1 2 3 4 5 6))
-
 
 (define drop (n xs)
 	(if (null? xs)
@@ -171,9 +134,6 @@
 		(if (equal? n 0)
 			xs
 			(drop (- n 1) (cdr xs)))))
-;(drop 3 '(1 2 3 4 5))
-
-;(append (take 4 '(1 2 3 4 5 6)) (drop 4 '(1 2 3 4 5 6)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; B. Zip and unzip
@@ -201,31 +161,17 @@
 ; the other half of the list..
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;(define greater (x y) (if (> x y) x y))
-;(define max (xs)
-;	(foldr greater (car xs) xs))	
 
-;(define max (xs)
-;	(foldr (lambda (x y) (if (> x y) x y)) (car xs) xs))	
-
-;(max '(1 2 3 4 5 2 1))
-
-
-;(define arg-max (f A)
-;	(max (map f A)))
-;(define square (a) (* a a))
-;(arg-max square '(5 4 3 2 1));
-
-
-
-
-;(define operate (f xs)
-;	(zip xs (map f xs)))
-
+(define operate (f xs)
+	(zip xs (map f xs)))
+(define car_greater? (x y)
+        (if (> (cadr x) (cadr y)) x y))
 (define arg-max (f A)
-	(car (foldr (lambda (x y) (if (> (cadr x) (cadr y)) x y)) (car (zip A (map f A))) (zip A (map f A)))))
+	(car (foldr car_greater? (car (operate f A)) (operate f A)))) 
 
-
+; in one big mess
+;(define arg-max (f A)
+;	(car (foldr (lambda (x y) (if (> (cadr x) (cadr y)) x y)) (car (zip A (map f A))) (zip A (map f A)))))
 
 
 
@@ -242,10 +188,9 @@
 			(if (< (car xs) (car ys))
 				(cons (car xs) (merge (cdr xs) ys))	
 				(cons (car ys) (merge xs (cdr ys)))))))
-;(merge '(1 3 5) '(2 4 6))	
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;E. Interleaving lists
+;E. Interleaving lists - key here is to switch xs and ys with each recursion
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define interleave (xs ys)
@@ -255,10 +200,6 @@
 			(interleave ys xs))
 		(cons (car xs) (interleave ys (cdr xs)))))
 
-;(interleave '(1 2 3) '(a b c))	
-;(interleave '(1 2 3) '(a b c d e f))
-;(interleave '(a b c d e f) '(1 2 3))
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -266,13 +207,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define to-prefix (xs)
-	(if (pair? (car xs))
-		(if (pair? (caddr xs))
+	(if (pair? (car xs))		; if the first element is a sub expression
+		(if (pair? (caddr xs))	; if the third element is a sub expression
 			(list3 (cadr xs) (to-prefix (car xs)) (to-prefix (caddr xs)))
 			(list3 (cadr xs) (to-prefix (car xs)) (caddr xs)))
-		(list3 (cadr xs) (car xs) (caddr xs))))
-
-(to-prefix '((1 + 2) * (12 / 4)))			
+		(if (pair? (caddr xs))
+			(list3 (cadr xs) (car xs) (to-prefix (caddr xs)))
+			(list3 (cadr xs) (car xs) (caddr xs)))))
 
 
 
@@ -293,7 +234,6 @@
 (define evalexp (xs)
 	(eval (to-prefix xs)))
 
-;(evalexp '((1 + 2) * (12 / 4)))			
 
 
 
