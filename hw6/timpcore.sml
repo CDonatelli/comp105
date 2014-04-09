@@ -1837,10 +1837,54 @@ fun typeof (e, globals, functions, formals) =
       (* Exercise [->]. [*]                           *)
       (* <function [[ty]], to check the type of an expression, given $\itenvs$ (
                                                                (prototype))>= *)
-      | ty (AGET (a, i))       = raise LeftAsExercise "AGET"
-      | ty (ASET (a, i, e))    = raise LeftAsExercise "ASET"
-      | ty (AMAKE (len, init)) = raise LeftAsExercise "AMAKE"
-      | ty (ALEN a)            = raise LeftAsExercise "ALEN"
+
+
+   (*  AGET - a must be an array of some type tau and i must be an integer  *)
+    (*  | ty (AGET (a, i))       = let 
+					val (tau1, tau2)= (ty a, ty i)
+				in 
+					if eqType (tau2,INTTY) then
+					   if eqType(ARRAYTY(INTTY),tau1) then
+						tau1
+					   else
+						raise TypeError ("Array expected for 'a', found: "^typeString tau1)
+					else 
+						raise TypeError ("Integer expected for 'i', found: "^typeString tau2)
+				end
+   *)
+
+      | ty (AGET (a, i))       = (case (ty a) of ARRAYTY(tau1) => if eqType ((ty i),INTTY) 
+								then tau1 
+							   else raise TypeError ("Expected integer for i, found:  "^typeString (ty i))
+				| _ => raise TypeError ("a is not an array!")) 
+
+
+
+  (*  ASET - a must be an array of some type tau and i must be an integer and e must evaluate to the same tau that composed a  *)
+      | ty (ASET (a, i, e))    = let 
+					val (tau1, tau2, tau3) = (ty a, ty i, ty e)
+				in
+					if eqType (tau2,INTTY) then
+   						if eqType (ARRAYTY(tau3),tau1) then
+							tau3 
+						else 
+							raise TypeError ("a is not an array of Es"^typeString tau1 ^"   "^typeString tau3)	
+				   	else
+						raise TypeError ("i is not an integer")
+				end
+	
+(*  AMAKE- len must be an integer and init must be of some type tau *)  
+      | ty (AMAKE (len, init)) = let 
+					val (tau1, tau2)=(ty len, ty init)
+				 in 
+					if eqType (tau1, INTTY) then
+						ARRAYTY(tau2)
+					else 
+						raise TypeError ("len expects an integer, instead got: "^typeString tau1)
+				end
+   (*  ALEN - a must be an array of some type tau *)
+      | ty (ALEN a)            =  (case (ty a) of ARRAYTY(tau1) => INTTY
+					| _ => raise TypeError ("Argument not an array"))
 (* Type checking                                *)
 (*                                              *)
 (* Given an expression e and a collection of type *)
