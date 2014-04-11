@@ -1856,16 +1856,79 @@ exception LeftAsExercise of string
 
 fun typeof (e, gamma, delta) = 
 let
- fun ty (LITERAL v) = inttype
- | ty (VAR n) = raise LeftAsExercise("typeof VAR")
- | ty (SET (x,e)) = raise LeftAsExercise("typeof SET")
- | ty (IFX (c,e1,e2)) = raise LeftAsExercise("typeof IFX")
+ fun ty (LITERAL v) = (case v of
+			BOOL(b) => booltype
+			| NUM(n) => inttype
+			| SYM(s) => symtype
+			| _ => raise TypeError "not a bool, int or symbol")
+
+
+ | ty (VAR n) = find(n,gamma)
+ 
+
+(*| ty (SET (x,e)) = raise LeftAsExercise("typeof SET")  *)
+
+  | ty (SET (x, e)) =
+               let val tau_x = ty (VAR x)
+                   val tau_e = ty e
+               in  if eqType (tau_x, tau_e) then
+                     tau_x
+                   else
+                     raise TypeError ("Set variable " ^ x ^ " of type " ^
+                                                              typeString tau_x ^
+                                      " to value of type " ^ typeString tau_e)
+               end
+
+ | ty (IFX (e1, e2, e3)) =
+            let val tau1 = ty e1
+                val tau2 = ty e2
+                val tau3 = ty e3
+            in  if eqType (tau1, booltype) then
+                  if eqType (tau2, tau3) then
+                    tau2
+                  else
+                    raise TypeError ("In if expression, true branch has type " ^
+                                     typeString tau2 ^
+                                                 " but false branch has type " ^
+                                     typeString tau3)
+                else
+                  raise TypeError ("Condition in if expression has type " ^
+                                                               typeString tau1 ^
+                                   ", which should be " ^ typeString booltype)
+            end
+
+
+
+
+
  | ty (WHILEX (c,e)) = raise LeftAsExercise("typeof WHILEX")
  | ty (BEGIN es) = raise LeftAsExercise("typeof BEGIN")
- | ty (APPLY (f,e)) = raise LeftAsExercise("typeof APPLY")
+ | ty (APPLY (f,a)) = raise LeftAsExercise("typeof APPLY")
+
+(*
+| ty (APPLY (f, actuals)) =
+             let val atypes = map ty actuals
+                  fun funtype(ftypes,rtype) = f
+             in  if eqTypes (atypes, ftypes) then
+                   rtype
+                 else
+                  raise TypeError("Need better type error for apply")
+             end
+*)
+
+
+
+
+
+
+
+
+
+
  | ty (LETX (e1,e2,e3)) = raise LeftAsExercise("typeof LETX")
  | ty (LAMBDA (e1)) = raise LeftAsExercise("typeof LAMBDA")
  | ty (TYAPPLY (e1,e2)) = raise LeftAsExercise("typeof TYAPPLY")
+ | ty (TYLAMBDA (e1::rest,e2)) = raise LeftAsExercise("typeof TYLAMBDA"^e1)
  | ty (TYLAMBDA (e1,e2)) = raise LeftAsExercise("typeof TYLAMBDA")
 
 
@@ -1876,9 +1939,9 @@ end
 (* Use this defintion when you're ready to implement the type checker *)
 fun elabdef (d, gamma, delta)  =
 	case d of
-	VAL (x, e) => (bind (x,typeof(e,gamma,delta),gamma),typeString (typeof(e,gamma,delta)))
+	VAL (x, e) => (bind (x,typeof(e,gamma,delta),gamma),typeString (typeof(e,gamma,delta))) 
 	| VALREC (n,t,e) => raise LeftAsExercise "elabdef VALREC"
-	| EXP (e) => raise LeftAsExercise "elabdef EXP"
+	| EXP (e) => elabdef(VAL("it",e),gamma,delta)
 	| DEFINE (n,t,l) => raise LeftAsExercise "elabdef DEFINE"
 	| USE (n) => raise LeftAsExercise "elabdef USE"
 	(*| _  => raise LeftAsExercise "elabdef catchall"  *)
@@ -2464,7 +2527,7 @@ val initialEnvs =
                      (* the same way that types classify expressions. *)
  nil)
       val envs    = (kinds, types, values)
-      val disable_basis = false
+      val disable_basis = true
       val basis   = if disable_basis then [] else
                     (* Further reading                              *)
                     (*                                              *)
