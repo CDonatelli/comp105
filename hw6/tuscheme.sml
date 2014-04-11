@@ -1853,11 +1853,41 @@ fun appearsUnprotectedIn (x, e) =
 (* <type checking for {\tuscheme} ((prototype))>= *)
 exception LeftAsExercise of string
 
+
+fun typeof (e, gamma, delta) = 
+let
+ fun ty (LITERAL v) = inttype
+ | ty (VAR n) = raise LeftAsExercise("typeof VAR")
+ | ty (SET (x,e)) = raise LeftAsExercise("typeof SET")
+ | ty (IFX (c,e1,e2)) = raise LeftAsExercise("typeof IFX")
+ | ty (WHILEX (c,e)) = raise LeftAsExercise("typeof WHILEX")
+ | ty (BEGIN es) = raise LeftAsExercise("typeof BEGIN")
+ | ty (APPLY (f,e)) = raise LeftAsExercise("typeof APPLY")
+ | ty (LETX (e1,e2,e3)) = raise LeftAsExercise("typeof LETX")
+ | ty (LAMBDA (e1)) = raise LeftAsExercise("typeof LAMBDA")
+ | ty (TYAPPLY (e1,e2)) = raise LeftAsExercise("typeof TYAPPLY")
+ | ty (TYLAMBDA (e1,e2)) = raise LeftAsExercise("typeof TYLAMBDA")
+
+
+in
+ty e
+end
+
 (* Use this defintion when you're ready to implement the type checker *)
-(* fun elabdef _ = raise LeftAsExercise "elabdef" *)
+fun elabdef (d, gamma, delta)  =
+	case d of
+	VAL (x, e) => (bind (x,typeof(e,gamma,delta),gamma),typeString (typeof(e,gamma,delta)))
+	| VALREC (n,t,e) => raise LeftAsExercise "elabdef VALREC"
+	| EXP (e) => raise LeftAsExercise "elabdef EXP"
+	| DEFINE (n,t,l) => raise LeftAsExercise "elabdef DEFINE"
+	| USE (n) => raise LeftAsExercise "elabdef USE"
+	(*| _  => raise LeftAsExercise "elabdef catchall"  *)
+
+
+
 
 (* Use this definition to test uScheme without type checking *)
-fun elabdef (d, gamma, delta) = (gamma, "Unknown type")
+(*fun elabdef (d, gamma, delta) = (gamma, "Unknown type") *)
 
 (* Type checking                                *)
 (*                                              *)
