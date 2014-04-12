@@ -1891,8 +1891,13 @@ let
                                    typeString tau1 ^ ", which should be " ^
                                    typeString booltype)
             end
- | ty (BEGIN es) = raise LeftAsExercise("typeof BEGIN")
-(* | ty (APPLY (f,a)) = raise LeftAsExercise("typeof APPLY")  *)
+
+(* the type of a begin statement is the type of the last expression...  borrowing the construct from the begin eval code *)
+ | ty (BEGIN es) = let fun b (e::es, lastval) = b (es, ty e)
+                  	| b (   [], lastval) = lastval
+            		in 
+				 b (es, unittype)
+        	   	 end 
 
         | ty (APPLY (f, a)) = (case ty(f) of
 		 (CONAPP (TYCON "function", [CONAPP (TYCON "tuple", args), result])) => 
@@ -1907,7 +1912,9 @@ let
  | ty (LETX (LET,bs,body)) = let val (names,values)=ListPair.unzip bs
 			in typeof(body,bindList(names, map ty values,gamma),delta)
 			end
- | ty (LETX (LETSTAR,b,e)) = raise LeftAsExercise("typeof LETSTAR")
+ | ty (LETX (LETSTAR,bs,body)) =  let fun step ((n, e),gamma) = bind(n, typeof(e,gamma,delta), gamma)
+            in  typeof (body, foldl step gamma bs,delta)
+            end
 
 (*  Implement LAMBDA (function definition), which is quite similar to LET. To create a function type, use the funtype function from the book. Because of the representation of types, function application is a bit tricky. Study funtype to see how function types are represented, so you understand how to pattern match against them.
 *)
@@ -1915,17 +1922,13 @@ let
 		in
 			let val (n,e)=ListPair.unzip a
 			in
-				(*raise TypeError("LAMBDA"^Int.toString(List.length(e)))*)
 				funtype(e,typeof(b,bindList(n,e,gamma),delta))
 		end
 end
  
 
-
-
 | ty (TYAPPLY (e1,e2)) = raise LeftAsExercise("typeof TYAPPLY")
  | ty (TYLAMBDA (e1,e2)) = inttype
-
 
 in
 ty e
