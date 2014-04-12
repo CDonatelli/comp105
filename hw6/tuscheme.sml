@@ -1860,6 +1860,7 @@ let
 			BOOL(b) => booltype
 			| NUM(n) => inttype
 			| SYM(s) => symtype
+			| PAIR(a,b) => raise TypeError ("LITERAL - pair")
 			| _ => raise TypeError "not a bool, int or symbol")
  | ty (VAR n) = find(n,gamma)
  | ty (SET (x, e)) =
@@ -1907,8 +1908,22 @@ let
 			in typeof(body,bindList(names, map ty values,gamma),delta)
 			end
  | ty (LETX (LETSTAR,b,e)) = raise LeftAsExercise("typeof LETSTAR")
- | ty (LAMBDA (e1)) = raise LeftAsExercise("typeof LAMBDA")
- | ty (TYAPPLY (e1,e2)) = raise LeftAsExercise("typeof TYAPPLY")
+
+(*  Implement LAMBDA (function definition), which is quite similar to LET. To create a function type, use the funtype function from the book. Because of the representation of types, function application is a bit tricky. Study funtype to see how function types are represented, so you understand how to pattern match against them.
+*)
+ | ty (LAMBDA (e1)) = let val (a:(name*tyex)list,b:exp)=e1
+		in
+			let val (n,e)=ListPair.unzip a
+			in
+				(*raise TypeError("LAMBDA"^Int.toString(List.length(e)))*)
+				funtype(e,typeof(b,bindList(n,e,gamma),delta))
+		end
+end
+ 
+
+
+
+| ty (TYAPPLY (e1,e2)) = raise LeftAsExercise("typeof TYAPPLY")
  | ty (TYLAMBDA (e1,e2)) = inttype
 
 
