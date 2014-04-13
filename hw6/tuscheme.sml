@@ -1856,11 +1856,18 @@ exception LeftAsExercise of string
 
 fun typeof (e, gamma, delta) = 
 let
+
+(*  TODO  -  finish LITERALS, specifically lists/pairs*)
+
  fun ty (LITERAL v) = (case v of
 			BOOL(b) => booltype
 			| NUM(n) => inttype
 			| SYM(s) => symtype
-			| PAIR(a,b) => raise TypeError ("LITERAL - pair")
+
+			(*  this is wrong...   we need to compare a and b somehow... if they are the same type, then we have listtype of whatever type that is.. otherwise we have mixed types, and an exception *)
+			| PAIR(a,b) => if 1=1 then
+					listtype(inttype)
+					else raise TypeError("mixed types in literal list")
 			| _ => raise TypeError "not a bool, int or symbol")
  | ty (VAR n) = find(n,gamma)
  | ty (SET (x, e)) =
@@ -1871,36 +1878,53 @@ let
                    else
                      raise TypeError ("Set variable " ^ x ^ " of type " ^typeString tau_x ^" to value of type " ^ typeString tau_e)
                end
+
+(*  IFX  *)
  | ty (IFX (e1, e2, e3)) =
-            let val (tau1,tau2,tau3) = (ty e1, ty e2, ty e3)
-            in  if eqType (tau1, booltype) then
-                  if eqType (tau2, tau3) then
-                    tau2
-                  else
-                    raise TypeError ("In if expression, true branch has type " ^typeString tau2 ^ " but false branch has type " ^ typeString tau3)
-                else
-                  raise TypeError ("Condition in if expression has type " ^ typeString tau1 ^ ", which should be " ^ typeString booltype)
-            end
+	let
+		val (tau1,tau2,tau3) = (ty e1, ty e2, ty e3)
+	in
+		if eqType (tau1, booltype) then
+			if eqType (tau2, tau3) then
+				tau2
+			else
+				raise TypeError ("In if expression, true branch has type " ^typeString tau2 ^
+						" but false branch has type " ^ typeString tau3)
+		else
+			raise TypeError ("Condition in if expression has type " ^ typeString tau1 ^ ", which should be " ^ typeString booltype)
+	end
+(*  WHILE  *)
+(*  *)
 | ty (WHILEX (e1, e2)) =
-            let val tau1 = ty e1
-                val tau2 = ty e2
-            in  if eqType (tau1, booltype ) then
-                  unittype
+	let
+		val (tau1,tau2) = (ty e1,ty e2)
+        in	
+		if eqType (tau1, booltype ) then
+			unittype
                 else
-                  raise TypeError ("Condition in while expression has type " ^
-                                   typeString tau1 ^ ", which should be " ^
-                                   typeString booltype)
-            end
+			raise TypeError ("Condition in while expression has type " ^typeString tau1 ^ ", which should be " ^typeString booltype)
+	end
 
+(*  BEGIN  *)
 (* the type of a begin statement is the type of the last expression...  borrowing the construct from the begin eval code *)
- | ty (BEGIN es) = let fun b (e::es, lastval) = b (es, ty e)
-                  	| b (   [], lastval) = lastval
-            		in 
-				 b (es, unittype)
-        	   	 end 
+(* define function "b", that takes a list of expressions and a type expression which recursively calls itself substituting *)
+(* the type of the car...  The base case returns the value of the last expression *)
+ | ty (BEGIN es) =
+	let
+		fun b (e::es, lastval) = b (es, ty e)
+		| b (   [], lastval) = lastval
+	in 
+		b (es, unittype)
+	end 
 
-        | ty (APPLY (f, a)) = (case ty(f) of
-		 (CONAPP (TYCON "function", [CONAPP (TYCON "tuple", args), result])) => 
+(*  APPLY  *)
+(* we look at ty(f) and match it to the type constructor for function types...  I couldn't find a way to make this match *)
+(* using funtype...   If it doesn't match the funtype pattern, raise an exception.   Otherwise use mapping to pull out  *)
+(* the argument types and the result type...   Compare the argument types from the definition to the argument types provided *)
+(* If they match, return the result type, otherwise raise an exception *)
+| ty (APPLY (f, a)) =
+	(case ty(f) of
+		 CONAPP (TYCON "function", [CONAPP (TYCON "tuple", args), result]) => 
 			if eqTypes(args,(map ty a)) then
 				result
 			else
@@ -1924,11 +1948,17 @@ let
 			in
 				funtype(e,typeof(b,bindList(n,e,gamma),delta))
 		end
-end
+  end
  
 
+
+(*  TYAPPLY  *)
+(*  TODO  -  everything for TYAPPLY *)
 | ty (TYAPPLY (e1,e2)) = raise LeftAsExercise("typeof TYAPPLY")
- | ty (TYLAMBDA (e1,e2)) = inttype
+
+(*  TYLAMBDA  *)
+(*  TODO  -  everything for TYLAMBDA *)
+| ty (TYLAMBDA (e1,e2)) = inttype
 
 in
 ty e
@@ -1937,9 +1967,15 @@ end
 (* Use this defintion when you're ready to implement the type checker *)
 fun elabdef (d, gamma, delta)  =
 	case d of
-	VAL (x, e) => (bind (x,typeof(e,gamma,delta),gamma),typeString (typeof(e,gamma,delta))) 
-	| VALREC (n,t,e) => (gamma,"junk")
+	VAL (n, e) => (bind (n,typeof(e,gamma,delta),gamma),typeString (typeof(e,gamma,delta))) 
+	| VALREC (n,t,e) => if eqType(t,typeof(e,gamma,delta)) then
+			(bind (n,t,gamma),typeString(t))
+			else
+			raise TypeError("VALREC - type missmatch t: "^typeString(t)^"   e:  "^typeString(typeof(e,gamma,delta)))
+
+
 	| EXP (e) => elabdef(VAL("it",e),gamma,delta)
+(*  TODO  -  everything for DEFINE  *)
 	| DEFINE (n,t,l) => (gamma,"junk")
 	| USE (n) => raise LeftAsExercise "elabdef USE"
 	(*| _  => raise LeftAsExercise "elabdef catchall"  *)
