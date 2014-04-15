@@ -1865,11 +1865,17 @@ let
 			| SYM(s) => symtype
 
 			(*  this is wrong...   we need to compare a and b somehow... if they are the same type, then we have listtype of whatever type that is.. otherwise we have mixed types, and an exception *)
-			| PAIR(a,b) => if 1=1 then
-					listtype(inttype)
-					else raise TypeError("mixed types in literal list")
-			| _ => raise TypeError "not a bool, int or symbol")
- | ty (VAR n) = find(n,gamma)
+			| PAIR(a,NIL) => listtype(ty(LITERAL a))
+			| PAIR(a,b) => if(eqType(listtype(ty(LITERAL a)),ty(LITERAL b))) then
+						ty(LITERAL b)
+					else
+						raise TypeError("LITERAL - PAIR - mismatch") 
+		| CLOSURE(l,r) => raise TypeError "Literal - closure"
+		| PRIMITIVE(p) => raise TypeError "Literal - primitive"	
+		| NIL => FORALL(["'a"],listtype(TYVAR("'a"))) 
+)
+ 
+| ty (VAR n) = find(n,gamma)
  | ty (SET (x, e)) =
                let val tau_x = ty (VAR x)
                    val tau_e = ty e
