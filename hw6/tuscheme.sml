@@ -1857,23 +1857,19 @@ exception LeftAsExercise of string
 fun typeof (e, gamma, delta) = 
 let
 
-(*  TODO  -  finish LITERALS, specifically lists/pairs*)
-
  fun ty (LITERAL v) = (case v of
 			BOOL(b) => booltype
 			| NUM(n) => inttype
 			| SYM(s) => symtype
-
-			(*  this is wrong...   we need to compare a and b somehow... if they are the same type, then we have listtype of whatever type that is.. otherwise we have mixed types, and an exception *)
 			| PAIR(a,NIL) => listtype(ty(LITERAL a))
 			| PAIR(a,b) => if(eqType(listtype(ty(LITERAL a)),ty(LITERAL b))) then
 						ty(LITERAL b)
 					else
 						raise TypeError("LITERAL - PAIR - mismatch") 
-		| CLOSURE(l,r) => raise TypeError "Literal - closure"
-		| PRIMITIVE(p) => raise TypeError "Literal - primitive"	
+		| CLOSURE(l,r) => raise TypeError("Literal - closure - this should never be reached")
+		| PRIMITIVE(p) => raise TypeError("Literal - primitive - this should never be reached")	
 		| NIL => FORALL(["'a"],listtype(TYVAR("'a"))) 
-)
+	)
  
 | ty (VAR n) = find(n,gamma)
  | ty (SET (x, e)) =
@@ -1938,7 +1934,6 @@ let
 		| _ => raise TypeError("not a function")
 		)
 
-(* b is a list of name, expression pairs..  we need to find the types of the expressions and bind them to the corresponding names in a new environment gamma', and then recursively call typeof with the newly built environment  *)
  | ty (LETX (LET,bs,body)) = let val (names,values)=ListPair.unzip bs
 			in typeof(body,bindList(names, map ty values,gamma),delta)
 			end
@@ -1946,8 +1941,6 @@ let
             in  typeof (body, foldl step gamma bs,delta)
             end
 
-(*  Implement LAMBDA (function definition), which is quite similar to LET. To create a function type, use the funtype function from the book. Because of the representation of types, function application is a bit tricky. Study funtype to see how function types are represented, so you understand how to pattern match against them.
-*)
  | ty (LAMBDA (e1)) = let val (a:(name*tyex)list,b:exp)=e1
 		in
 			let val (n,e)=ListPair.unzip a
@@ -1970,24 +1963,26 @@ let
 
 
 (*  TYLAMBDA  *)
-(*  TODO  -  everything for TYLAMBDA 
-| TYLAMBDA of name list * exp
-FORALL of name list * tyex
-*)
-| ty (TYLAMBDA (n,e)) = FORALL(n,ty e)
-
+| ty (TYLAMBDA (alphas,e)) = let	(* create new delta' by foldl'ing a binding of kind "TYPE" with each alpha into delta *)
+				val delta'=foldl (fn (a, d) => bind (a, TYPE, d)) delta alphas
+			in 		(* then create a FORALL with those alphas, and the type of e, evaluated with kind environment delta' *)
+				FORALL(alphas,typeof(e,gamma,delta'))
+end
 in
-ty e
+	ty e
 end
 
 (* Use this defintion when you're ready to implement the type checker *)
 fun elabdef (d, gamma, delta)  =
 	case d of
-	VAL (n, e) => (bind (n,typeof(e,gamma,delta),gamma),typeString (typeof(e,gamma,delta))) 
+	VAL (n, e) => let val tau=typeof(e,gamma,delta)
+			in
+				(bind (n,tau,gamma),typeString(tau))
+			end 
 	| VALREC (n,t,e) => if eqType(t,typeof(e,gamma,delta)) then
 			(bind (n,t,gamma),typeString(t))
 			else
-			raise TypeError("VALREC - type missmatch t: "^typeString(t)^"   e:  "^typeString(typeof(e,gamma,delta)))
+			raise TypeError("VALREC - type missmatch provided type: "^typeString(t)^"   type of expression e: "^typeString(typeof(e,gamma,delta)))
 	| EXP (e) => elabdef(VAL("it",e),gamma,delta)
 	| DEFINE (n,t,l) => let val (nt_list,e)=l in
 				let val (names,types)=ListPair.unzip nt_list in
