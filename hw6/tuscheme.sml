@@ -1966,15 +1966,15 @@ let
 
 )
 *)
-
-
-
 | ty (TYAPPLY (e,t)) = instantiate(ty(e),t,delta)
 
 
 (*  TYLAMBDA  *)
-(*  TODO  -  everything for TYLAMBDA *)
-| ty (TYLAMBDA (e1,e2)) = inttype
+(*  TODO  -  everything for TYLAMBDA 
+| TYLAMBDA of name list * exp
+FORALL of name list * tyex
+*)
+| ty (TYLAMBDA (n,e)) = FORALL(n,ty e)
 
 in
 ty e
