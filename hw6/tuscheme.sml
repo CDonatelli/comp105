@@ -1957,10 +1957,20 @@ let
   end
  
 
+(*  --  this was our attempt before we realized we could just call instantiate()
+| ty (TYAPPLY (e1:exp,t_list:tyex list)) = (case ty(e1) of
+				TYVAR(a) => raise LeftAsExercise("TYAPPLY TYVAR")
+				(*  a is a name list, b is a tyex, ty(e1) is a tyex *)
+				|FORALL(a:name list,b:tyex) => tysubst(b,bindList(a,t_list,emptyEnv))
+				|_ => raise LeftAsExercise("typeof TYAPPLY FORALL catchall")
 
-(*  TYAPPLY  *)
-(*  TODO  -  everything for TYAPPLY *)
-| ty (TYAPPLY (e1,e2)) = raise LeftAsExercise("typeof TYAPPLY")
+)
+*)
+
+
+
+| ty (TYAPPLY (e,t)) = instantiate(ty(e),t,delta)
+
 
 (*  TYLAMBDA  *)
 (*  TODO  -  everything for TYLAMBDA *)
@@ -1978,11 +1988,12 @@ fun elabdef (d, gamma, delta)  =
 			(bind (n,t,gamma),typeString(t))
 			else
 			raise TypeError("VALREC - type missmatch t: "^typeString(t)^"   e:  "^typeString(typeof(e,gamma,delta)))
-
-
 	| EXP (e) => elabdef(VAL("it",e),gamma,delta)
-(*  TODO  -  everything for DEFINE  *)
-	| DEFINE (n,t,l) => (gamma,"junk")
+	| DEFINE (n,t,l) => let val (nt_list,e)=l in
+				let val (names,types)=ListPair.unzip nt_list in
+					 elabdef(VALREC(n,funtype(types,t),LAMBDA l),gamma,delta)
+				end
+			end   
 	| USE (n) => raise LeftAsExercise "elabdef USE"
 	(*| _  => raise LeftAsExercise "elabdef catchall"  *)
 
