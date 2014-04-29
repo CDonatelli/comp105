@@ -21,8 +21,8 @@
  */
 typedef struct Mvalue Mvalue;
 struct Mvalue {
-    Value v;
-    unsigned live:1;
+				Value v;
+				unsigned live:1;
 };
 /*
  * We put these wrapped values into arenas. A single
@@ -36,8 +36,8 @@ struct Mvalue {
 enum growth_unit { GROWTH_UNIT = 24 };
 typedef struct Arena *Arena;
 struct Arena {
-    Mvalue pool[GROWTH_UNIT];
-    Arena tl;
+				Mvalue pool[GROWTH_UNIT];
+				Arena tl;
 };
 /*
  * We use the [[tl]] field to chain arenas on a linked
@@ -79,10 +79,10 @@ static int nmarks;              /* total number of cells marked */
  * <ms.c>=
  */
 static void makecurrent(Arena a) {
-    assert(a != NULL);
-    curarena = a;
-    hp = &a->pool[0];
-    heaplimit = &a->pool[GROWTH_UNIT];
+				assert(a != NULL);
+				curarena = a;
+				hp = &a->pool[0];
+				heaplimit = &a->pool[GROWTH_UNIT];
 }
 /*
  * When the heap grows, it grows by one arena at a time.
@@ -95,17 +95,17 @@ static void makecurrent(Arena a) {
  */
 static int heapsize;            /* OMIT */
 static void addarena(void) {
-    Arena a = calloc(1, sizeof(*a));
-    assert(a != NULL);
+				Arena a = calloc(1, sizeof(*a));
+				assert(a != NULL);
 
-    if (arenalist == NULL) {
-        arenalist = a;
-    } else {
-        assert(curarena != NULL && curarena->tl == NULL);
-        curarena->tl = a;
-    }
-    makecurrent(a);
-    heapsize += GROWTH_UNIT;   /* OMIT */
+				if (arenalist == NULL) {
+								arenalist = a;
+				} else {
+								assert(curarena != NULL && curarena->tl == NULL);
+								curarena->tl = a;
+				}
+				makecurrent(a);
+				heapsize += GROWTH_UNIT;   /* OMIT */
 }
 /*
  * We provide a prototype allocator that never collects
@@ -115,13 +115,132 @@ static void addarena(void) {
  * collection. [*]
  * <ms.c ((prototype))>=
  */
+
+void printheap(void);
+void mark(void)
+{
+				int i;
+				ncollections++;
+				for(i=0;i<rootstacksize;i++)
+				{
+								visitroot(rootstack[i]);
+				}
+				if(ncollections%10==0)
+				{
+								fprintf(stderr,"after %d collections\tallocations: %d\theap size: %d\tmarks:%d\n",ncollections,nalloc,heapsize,nmarks);
+				}
+}
+
+
+void printheap(void)
+{
+				int i,j;
+				char x;
+				Arena a;
+				j=0;
+				a=arenalist;
+				fprintf(stderr,"State of the heap... '0' is unmarked, '1' is marked, '8' is location of hp.\n");
+				while(1)
+				{
+								if(a==NULL)
+												return;
+								fprintf(stderr,"arena\t%d:\t",j);
+								for(i=0;i<GROWTH_UNIT;i++)
+								{
+												if(hp==&a->pool[i])
+																x='x';
+												else if (a->pool[i].live==1)
+																x='1';
+												else
+																x='0';
+												fprintf(stderr,"%c",x);
+								}
+								fprintf(stderr,"\n");
+								j++;
+								if(a->tl == NULL)
+												return;
+								else
+												a=a->tl;
+				}
+}
+
+/*
+	 For each allocloc, we start with the heap pointer where it was last left..
+
+	 1. Check to see if the current location is marked, if it is, then unmark it and move the pointer and start over.
+	 2. If the MValue at hp is not marked, return it (incrementing hp)
+	 3. If hp == heaplimit, then we mark.
+	 4. If we mark and are still unable to allocate, then we grow the heap.
+ */
+
+Value* allocloc_helper(void)
+{
+				if(curarena==NULL)
+								return NULL;
+				while(1)
+				{
+								while(hp<heaplimit)   /* while we're not a the end of the arena */
+								{
+												if (!hp->live)  /* if hp->live is zero */
+												{
+																assert(hp < heaplimit);
+																return &(hp++)->v;
+												}
+												else /* if the current hp is marked live, unmark it and check the next */
+												{
+																/*								fprintf(stderr,"unmarking slot %ld...\n",heaplimit-hp);  */
+																hp->live=0;
+																hp++;
+												}
+								}
+								/* at the end of this arena, let's move to the next */
+								if(curarena->tl==NULL)
+												return NULL;
+								else
+												makecurrent(curarena->tl);
+				}
+}
+
 Value* allocloc(void) {
-    (void)visitroot; /* eventually the solution will call visitroot(), perhaps
-                                                       indirectly */  /* OMIT */
-    if (hp == heaplimit)
-        addarena();
-    assert(hp < heaplimit);
-    return &(hp++)->v;
+				/* always increment nalloc for every allocation */
+				Value *V;
+				nalloc++;
+				/*  call allocloc_helper to get a pointer to the next empty cell */
+				V=allocloc_helper();
+
+				/* if we get nothing, we call mark, then reset our pointer to the beginning of the heap */
+				if(V!=NULL)
+				{
+								return V;
+				}
+				else
+				{
+								fprintf(stderr,"calling mark and resetting hp to beginning of arenalist\n");
+								printheap();
+								mark();
+								printheap();
+								if(arenalist!=NULL)
+								{
+												makecurrent(arenalist);
+								}
+								else
+								{
+												fprintf(stderr,"arenalist is NULL, so this must be the first alloc");
+								}
+				}
+
+				/* after marking, we try again..  If there's still no empty cells, we add a new arena, growing the heap. */
+				V=allocloc_helper();
+				if(V!=NULL)
+				{
+								return V;
+				}
+				else
+				{
+								fprintf(stderr,"Exhausted current heap, adding an arena...\n");
+								addarena();
+								return &(hp++)->v;
+				}
 }
 /*
  * Writing these procedures is mostly straightforward.
@@ -130,8 +249,8 @@ Value* allocloc(void) {
  * <ms.c>=
  */
 static void visitenv(Env env) {
-    for (; env; env = env->tl)
-        visitheaploc(env->loc);
+				for (; env; env = env->tl)
+								visitheaploc(env->loc);
 }
 /*
  * In order for this function to work, we have to expose
@@ -151,17 +270,18 @@ static void visitenv(Env env) {
  * <ms.c ((prototype))>=
  */
 static void visitheaploc(Value *loc) {
-    Mvalue *m = (Mvalue*)loc;
-    if (!m->live) {
-        m->live = 1;
-        visitvaluechildren(m->v);
-    }
+				Mvalue *m = (Mvalue*)loc;
+				if (!m->live) {
+								m->live = 1;
+								nmarks++;
+								visitvaluechildren(m->v);
+				}
 }
 /*
  * <ms.c>=
  */
 static void visitstackvalue(Value v) {
-    visitvaluechildren(v);
+				visitvaluechildren(v);
 }
 /*
  * Function [[visitvaluechildren]] works the same
@@ -170,25 +290,25 @@ static void visitstackvalue(Value v) {
  * <ms.c>=
  */
 static void visitvaluechildren(Value v) {
-    switch (v.alt) {
-    case NIL:
-    case BOOL:
-    case NUM:
-    case SYM:
-    case PRIMITIVE:
-        return;
-    case PAIR:
-        visitheaploc(v.u.pair.car);
-        visitheaploc(v.u.pair.cdr);
-        return;
-    case CLOSURE:
-        visitexp(v.u.closure.lambda.body);
-        visitenv(v.u.closure.env);
-        return;
-    default:
-        assert(0);
-        return;
-    }
+				switch (v.alt) {
+								case NIL:
+								case BOOL:
+								case NUM:
+								case SYM:
+								case PRIMITIVE:
+												return;
+								case PAIR:
+												visitheaploc(v.u.pair.car);
+												visitheaploc(v.u.pair.cdr);
+												return;
+								case CLOSURE:
+												visitexp(v.u.closure.lambda.body);
+												visitenv(v.u.closure.env);
+												return;
+								default:
+												assert(0);
+												return;
+				}
 }
 /*
  * To visit an expression, we visit its literal value,
@@ -196,118 +316,122 @@ static void visitvaluechildren(Value v) {
  * <ms.c>=
  */
 static void visitexp(Exp e) {
-    switch (e->alt) {
-    case LITERAL:
-        visitvaluechildren(e->u.literal);
-        return;
-    case VAR:
-        return;
-    case IFX:
-        visitexp(e->u.ifx.cond);
-        visitexp(e->u.ifx.true);
-        visitexp(e->u.ifx.false);
-        return;
-    case WHILEX:
-        visitexp(e->u.whilex.cond);
-        visitexp(e->u.whilex.body);
-        return;
-    case BEGIN:
-        visitexplist(e->u.begin);
-        return;
-    case SET:
-        visitexp(e->u.set.exp);
-        return;
-    case LETX:
-        visitexplist(e->u.letx.el);
-        visitexp(e->u.letx.body);
-        return;
-    case LAMBDAX:
-        visitexp(e->u.lambdax.body);
-        return;
-    case APPLY:
-        visitexp(e->u.apply.fn);
-        visitexplist(e->u.apply.actuals);
-        return;
-    default:
-        assert(0);
-    }
+				switch (e->alt) {
+								case LITERAL:
+												visitvaluechildren(e->u.literal);
+												return;
+								case VAR:
+												return;
+								case IFX:
+												visitexp(e->u.ifx.cond);
+												visitexp(e->u.ifx.true);
+												visitexp(e->u.ifx.false);
+												return;
+								case WHILEX:
+												visitexp(e->u.whilex.cond);
+												visitexp(e->u.whilex.body);
+												return;
+								case BEGIN:
+												visitexplist(e->u.begin);
+												return;
+								case SET:
+												visitexp(e->u.set.exp);
+												return;
+								case LETX:
+												visitexplist(e->u.letx.el);
+												visitexp(e->u.letx.body);
+												return;
+								case LAMBDAX:
+												visitexp(e->u.lambdax.body);
+												return;
+								case APPLY:
+												visitexp(e->u.apply.fn);
+												visitexplist(e->u.apply.actuals);
+												return;
+								default:
+												assert(0);
+				}
 }
 /*
  * To visit a definition, we visit any expressions it
  * contains.
  * <ms.c>=
  */
-static void visitdef(Def d) {
-    if (d == NULL)
-        return;
-    else
-        switch (d->alt) {
-        case VAL:
-            visitexp(d->u.val.exp);
-            return;
-        case EXP:
-            visitexp(d->u.exp);
-            return;
-        case DEFINE:
-            visitexp(d->u.define.lambda.body);
-            return;
-        case USE:
-            return;
-        default:
-            assert(0);
-        }
-}
+				static void visitdef(Def d) {
+								if (d == NULL)
+												return;
+								else
+												switch (d->alt) {
+																case VAL:
+																				visitexp(d->u.val.exp);
+																				return;
+																case EXP:
+																				visitexp(d->u.exp);
+																				return;
+																case DEFINE:
+																				visitexp(d->u.define.lambda.body);
+																				return;
+																case USE:
+																				return;
+																default:
+																				assert(0);
+												}
+				}
 /*
  * To visit a root, we call the appropriate visiting
  * procedure.
  * <ms.c>=
  */
 static void visitroot(Root r) {
-    switch (r.alt) {
-    case STACKVALUEROOT:
-        visitstackvalue(*r.u.stackvalueroot);
-        return;
-    case HEAPLOCROOT:
-        visitheaploc(*r.u.heaplocroot);
-        return;
-    case ENVROOT:
-        visitenv(*r.u.envroot);
-        return;
-    case EXPROOT:
-        visitexp(*r.u.exproot);
-        return;
-    case VALUELISTROOT:
-        visitvaluelist(*r.u.valuelistroot);
-        return;
-    case DEFROOT:
-        visitdef(*r.u.defroot);
-        return;
-    default:
-        assert(0);
-    }
+				switch (r.alt) {
+								case STACKVALUEROOT:
+												visitstackvalue(*r.u.stackvalueroot);
+												return;
+								case HEAPLOCROOT:
+												visitheaploc(*r.u.heaplocroot);
+												return;
+								case ENVROOT:
+												visitenv(*r.u.envroot);
+												return;
+								case EXPROOT:
+												visitexp(*r.u.exproot);
+												return;
+								case VALUELISTROOT:
+												visitvaluelist(*r.u.valuelistroot);
+												return;
+								case DEFROOT:
+												visitdef(*r.u.defroot);
+												return;
+								default:
+												assert(0);
+				}
 }
 /*
  * Here are procedures for visiting various lists.
  * <ms.c>=
  */
 static void visitvaluelist(Valuelist vl) {
-    for (; vl; vl = vl->tl)
-        visitvaluechildren(vl->hd);
+				for (; vl; vl = vl->tl)
+								visitvaluechildren(vl->hd);
 }
 /*
  * <ms.c>=
  */
 static void visitexplist(Explist el) {
-    for (; el; el = el->tl)
-        visitexp(el->hd);
+				for (; el; el = el->tl)
+								visitexp(el->hd);
 }
 /*
  * <ms.c ((prototype))>=
  */
 /* you need to redefine these functions */
 void printfinalstats(void) { 
-  (void)nalloc; (void)ncollections; (void)nmarks;
-  assert(0); 
+				(void)nalloc; (void)ncollections; (void)nmarks;
+				fprintf(stderr,"\nGarbage collection stats:\n");
+				fprintf(stderr,"%d - allocations\n",nalloc);
+				fprintf(stderr,"%d - collections\n",ncollections);
+				fprintf(stderr,"%d - mark\n",nmarks);
+				assert(1); 
 }
 /*
  * Completed garbage collectors
