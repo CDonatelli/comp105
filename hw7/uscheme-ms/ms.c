@@ -116,30 +116,36 @@ static void addarena(void) {
  * <ms.c ((prototype))>=
  */
 
-void printheap(void);
+void printheap();
 void mark(void)
 {
-				int i;
+				int i,tmp_nmarks;
 				ncollections++;
+				tmp_nmarks=nmarks;
 				for(i=0;i<rootstacksize;i++)
 				{
 								visitroot(rootstack[i]);
 				}
+				fprintf(stderr,"Collection #%d\theapsize:%d\tlive:%d\tratio:%f\n",ncollections,heapsize,nmarks-tmp_nmarks,(float)heapsize/(nmarks-tmp_nmarks));
 				if(ncollections%10==0)
 				{
-								fprintf(stderr,"after %d collections\tallocations: %d\theap size: %d\tmarks:%d\n",ncollections,nalloc,heapsize,nmarks);
+								fprintf(stderr,"After %d collections\tallocations: %d\theap size: %d\tmarks:%d\n",ncollections,nalloc,heapsize,nmarks);
 				}
 }
 
 
-void printheap(void)
+void printheap()
 {
 				int i,j;
-				char x;
+				char w;
 				Arena a;
 				j=0;
 				a=arenalist;
-				fprintf(stderr,"State of the heap... '0' is unmarked, '1' is marked, '8' is location of hp.\n");
+				fprintf(stderr,"\nGarbage collection stats:\n");
+				fprintf(stderr,"%d - cumulative allocations\n",nalloc);
+				fprintf(stderr,"%d - cumulative collections\n",ncollections);
+				fprintf(stderr,"%d - cumulative marks\n",nmarks);
+				fprintf(stderr,"State of the heap... '0' is unmarked, '1' is marked, 'x' is location of hp.\n");
 				while(1)
 				{
 								if(a==NULL)
@@ -148,12 +154,12 @@ void printheap(void)
 								for(i=0;i<GROWTH_UNIT;i++)
 								{
 												if(hp==&a->pool[i])
-																x='x';
+																	w='x';
 												else if (a->pool[i].live==1)
-																x='1';
+																w='1';
 												else
-																x='0';
-												fprintf(stderr,"%c",x);
+																w='0';
+												fprintf(stderr,"%c",w);
 								}
 								fprintf(stderr,"\n");
 								j++;
@@ -204,7 +210,8 @@ Value* allocloc_helper(void)
 Value* allocloc(void) {
 				/* always increment nalloc for every allocation */
 				Value *V;
-				nalloc++;
+				int tempmarks;
+				nalloc++;	
 				/*  call allocloc_helper to get a pointer to the next empty cell */
 				V=allocloc_helper();
 
@@ -215,17 +222,22 @@ Value* allocloc(void) {
 				}
 				else
 				{
-								fprintf(stderr,"calling mark and resetting hp to beginning of arenalist\n");
-								printheap();
+								/* fprintf(stderr,"calling mark and resetting hp to beginning of arenalist\n"); */
+								/*printheap();*/
+								tempmarks=nmarks;
 								mark();
-								printheap();
+								if(tempmarks==nmarks)
+								{
+												/*fprintf(stderr,"nothing new was marked...\n");*/
+								}
+								/*printheap();*/
 								if(arenalist!=NULL)
 								{
 												makecurrent(arenalist);
 								}
 								else
 								{
-												fprintf(stderr,"arenalist is NULL, so this must be the first alloc");
+								/*				fprintf(stderr,"arenalist is NULL, so this must be the first alloc");  */
 								}
 				}
 
@@ -237,7 +249,7 @@ Value* allocloc(void) {
 				}
 				else
 				{
-								fprintf(stderr,"Exhausted current heap, adding an arena...\n");
+								/*fprintf(stderr,"Exhausted current heap, adding an arena...\n");*/
 								addarena();
 								return &(hp++)->v;
 				}

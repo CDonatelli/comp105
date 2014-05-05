@@ -128,7 +128,10 @@ static Par readpar(char **ps, Reader r, int flag, char *moreprompt) {
 
             return p;
         }
-    default:
+		case '%':
+				printheap();
+				return NULL;
+		default:
         if ((flag & Quote) && **ps == '\'') {
             /*
              * If we are lexing a language that uses a [[']]

@@ -23,6 +23,7 @@
 #include <assert.h>
 #include <setjmp.h>
 #include <ctype.h>
+#include <signal.h>
 /*
  * For real implementations, it is convenient to build
  * names from strings. Unlike C strings, names are
@@ -774,3 +775,5 @@ int gammadesired(int defaultval, int minimum);
  * <function prototypes for \uscheme>=
  */
 Value validate(Value); 
+
+void printheap(void);
